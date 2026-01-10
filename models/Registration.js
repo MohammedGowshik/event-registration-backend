@@ -6,7 +6,8 @@ const RegistrationSchema = new mongoose.Schema({
   phone: String,
   gender: String,
   city: String,
-  createdAt: { type: Date, default: Date.now }
+  numPeople: Number,
+  createdAt: { type: Date, default: Date.now }    
 });
 
 module.exports = mongoose.model("Registration", RegistrationSchema);

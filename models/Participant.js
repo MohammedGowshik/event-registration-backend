@@ -6,7 +6,8 @@ const participantSchema = new mongoose.Schema({
   email: { type: String },
   phone: { type: String, required: true },
   gender: { type: String, required: true },
-  city: { type: String, required: true }
+  city: { type: String, required: true },
+  numPeople: {type: Number, required: true}       ///new added
 }, { timestamps: true });
 
 module.exports = mongoose.model("Participant", participantSchema);
