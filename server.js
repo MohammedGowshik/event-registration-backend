@@ -1,3 +1,5 @@
+
+
 const express = require('express');
 const cors = require('cors');
 const ExcelJS = require('exceljs');
@@ -55,6 +57,33 @@ app.post('/api/register', async (req, res) => {
     res.status(500).json({ message: "Registration Failed" });
   }
 });
+
+
+/* ======================= Admin Dashboard Data ======================= */
+app.get("/api/admin/dashboard", async (req, res) => {
+  try {
+    if (req.query.password !== ADMIN_PASSWORD)
+      return res.status(401).json({ message: "Unauthorized" });
+
+    const participants = await Participant.find();
+
+    const totalPeople = participants.reduce(
+      (sum, p) => sum + (p.numPeople || 1),
+      0
+    );
+
+    res.json({
+      totalRegistrations: participants.length,
+      totalPeople,
+      participants
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 
 /* ======================= Excel Export ======================= */
 app.get('/api/download', async (req, res) => {

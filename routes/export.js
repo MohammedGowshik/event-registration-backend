@@ -1,3 +1,5 @@
+const Participant = require("../Backend/Participant");
+
 const express = require("express");
 const ExcelJS = require("exceljs");
 const Registration = require("../models/Registration");
