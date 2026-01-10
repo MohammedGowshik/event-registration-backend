@@ -41,42 +41,51 @@
 
 
 const express = require("express");
-const ExcelJS = require("exceljs");
-const Participant = require("../Participant"); // use correct model path
-
 const router = express.Router();
+const XLSX = require("xlsx");
+const path = require("path");
+const Participant = require("../Participant");
 
-router.get("/export", async (req, res) => {
-  const password = req.query.password;
-  if (password !== "admin123") return res.status(401).send("Unauthorized");
+const ADMIN_PASSWORD = "admin123";
 
-  const participants = await Participant.find();
-  if (!participants.length) return res.status(404).send("No data available");
+router.get("/download", async (req, res) => {
+  try {
+    const { password } = req.query;
 
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet("Participants");
+    if (password !== ADMIN_PASSWORD) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
-  // HEADER row
-  sheet.addRow(["Name", "Age", "Email", "Phone", "Gender", "City", "Number of People"]);
+    const participants = await Participant.find().lean();
 
-  // DATA rows
-  participants.forEach(p => {
-    sheet.addRow([
-      p.name,
-      p.age,
-      p.email || "",  // optional email
-      p.phone,
-      p.gender,
-      p.city,
-      p.numPeople
-    ]);
-  });
+    if (participants.length === 0) {
+      return res.status(404).json({ message: "No data available" });
+    }
 
-  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-  res.setHeader("Content-Disposition", "attachment; filename=participants.xlsx");
+    const data = participants.map((p, index) => ({
+      "S.No": index + 1,
+      Name: p.name,
+      Age: p.age,
+      Email: p.email,
+      Phone: p.phone,
+      Gender: p.gender,
+      City: p.city,
+      "No of People": p.numPeople
+    }));
 
-  await workbook.xlsx.write(res);
-  res.end();
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Participants");
+
+    const filePath = path.join(__dirname, "participants.xlsx");
+    XLSX.writeFile(workbook, filePath);
+
+    res.download(filePath, "participants.xlsx");
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Excel download failed" });
+  }
 });
 
 module.exports = router;
+

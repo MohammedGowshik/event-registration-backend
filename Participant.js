@@ -17,16 +17,18 @@
 
 
 
+
 const mongoose = require("mongoose");
 
 const participantSchema = new mongoose.Schema({
-  name: { type: String, required: true },
+  name: String,
   age: Number,
   email: String,
-  phone: { type: String, required: true, unique: true }, // prevent duplicates
+  phone: { type: String, required: true, unique: true },
   gender: String,
   city: String,
-  numPeople: { type: Number, default: 1 } // NEW FIELD
-}, { timestamps: true, versionKey: false }); // remove __v
+  numPeople: { type: Number, default: 1 }
+}, { timestamps: true, versionKey: false }); // <--- disables __v
+
 
 module.exports = mongoose.model("Participant", participantSchema);

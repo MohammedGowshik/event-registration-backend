@@ -101,58 +101,74 @@
 
 
 
+const express = require("express");
+const ExcelJS = require("exceljs");
+const Participant = require("../models/Participant"); // Make sure this path is correct
+const router = express.Router();
 
+const ADMIN_PASSWORD = "admin123"; // Same as in server.js
 
-
-const express = require('express');
-const cors = require('cors');
-const mongoose = require('mongoose');
-require("dotenv").config();
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-const exportRouter = require("./routes/export");
-const Participant = require("./Participant");
-
-const ADMIN_PASSWORD = "admin123";
-
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.error("MongoDB error:", err));
-
-// Register API
-app.post('/api/register', async (req, res) => {
+// Download Excel of participants
+router.get("/download", async (req, res) => {
   try {
-    const { name, age, email, phone, gender, city, numPeople } = req.body;
+    if (req.query.password !== ADMIN_PASSWORD) {
+      return res.status(401).send("Unauthorized");
+    }
 
-    // Check duplicate phone
-    const exists = await Participant.findOne({ phone });
-    if (exists) return res.status(400).json({ message: "Phone number already registered!" });
+    const participants = await Participant.find();
+    if (!participants.length) return res.send("No data available");
 
-    const participant = new Participant({
-      name,
-      age: Number(age),
-      email,
-      phone,
-      gender,
-      city,
-      numPeople: Number(numPeople) || 1
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Participants");
+
+    // Header row
+    sheet.addRow([
+      "Name",
+      "Age",
+      "Email",
+      "Phone",
+      "Gender",
+      "City",
+      "Number of People"
+    ]);
+
+    // Data rows
+    participants.forEach(p => {
+      sheet.addRow([
+        p.name,
+        p.age,
+        p.email || "",
+        p.phone,
+        p.gender,
+        p.city,
+        p.numPeople
+      ]);
     });
 
-    await participant.save();
-    res.status(201).json({ message: `Registered successfully for ${participant.numPeople} people!` });
+    // Set response headers
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=participants.xlsx"
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Registration Failed" });
+    res.status(500).send("Error generating Excel file");
   }
 });
 
-// Use export router
-app.use("/api", exportRouter);
+module.exports = router;
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+
+
+
+
 
