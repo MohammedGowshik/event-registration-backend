@@ -1,6 +1,8 @@
 // const express = require("express");
 // const router = express.Router();
 // const Registration = require("../models/Registration");
+// const Participant = require("../models/Participant"); // ✅ Correct
+
 
 // router.post("/register", async (req, res) => {
 //   try {
